@@ -5,6 +5,7 @@ import { issueDateFor } from "@/lib/domain/day";
 import { emptyStreak, type StreakState } from "@/lib/domain/streak";
 import { outcomeFor } from "@/lib/domain/threshold";
 import { toPublicQuestion } from "@/lib/domain/publish";
+import { demoToday, isDemo } from "./demo";
 import type {
   DossierRecord,
   HighlightRecord,
@@ -46,6 +47,8 @@ export async function loadQuestions(textId: string): Promise<QuestionRecord[]> {
 
 /** Everything the reading screen needs, in one round of queries. */
 export async function loadToday(viewer: Viewer, now = new Date()): Promise<TodayView | null> {
+  if (isDemo()) return demoToday(now);
+
   const admin = createAdminClient();
   const date = issueDateFor(now, viewer.homeTimezone);
   const userId = viewer.id;

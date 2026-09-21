@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { issueDateFor } from "@/lib/domain/day";
 import { currentUser } from "@/lib/server/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { demoSetPosition, isDemo } from "@/lib/server/demo";
 
 export const runtime = "nodejs";
 
@@ -14,6 +15,11 @@ export async function POST(request: Request) {
     lastParagraph?: number;
     scrollProgress?: number;
   };
+
+  if (isDemo()) {
+    demoSetPosition(Math.max(0, Math.floor(lastParagraph ?? 0)));
+    return NextResponse.json({ ok: true });
+  }
 
   const admin = createAdminClient();
   const date = issueDateFor(new Date(), user.homeTimezone);

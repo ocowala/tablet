@@ -153,9 +153,15 @@ mark.hl[data-color="blue"] {
   animation: fade-in 700ms ease both;
 }
 
+/* Controls should be readable at once. Only the percentile line is slow. */
+.animate-fade-quick {
+  animation: fade-in 180ms ease both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-rise,
-  .animate-fade-in {
+  .animate-fade-in,
+  .animate-fade-quick {
     animation: none;
   }
   * {

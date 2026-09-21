@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { currentUser } from "@/lib/server/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isPenalised } from "@/lib/domain/integrity";
+import { demoTopResponses, isDemo } from "@/lib/server/demo";
 
 export const runtime = "nodejs";
 
@@ -16,6 +17,8 @@ export async function GET(request: Request) {
 
   const questionId = new URL(request.url).searchParams.get("questionId");
   if (!questionId) return NextResponse.json({ responses: [] }, { status: 400 });
+
+  if (isDemo()) return NextResponse.json({ responses: demoTopResponses(questionId) });
 
   // Only readers who have finished this question may read the others.
   const admin = createAdminClient();

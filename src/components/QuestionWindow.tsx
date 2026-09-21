@@ -60,6 +60,15 @@ export function QuestionWindow({
     if (editing) textarea.current?.focus();
   }, [editing]);
 
+  // An answer runs to 180 words, so a fixed height would scroll the start of
+  // it out of sight while the reader is still writing.
+  useEffect(() => {
+    const field = textarea.current;
+    if (!field) return;
+    field.style.height = "auto";
+    field.style.height = `${field.scrollHeight}px`;
+  }, [body, editing]);
+
   useEffect(() => () => {
     if (dimTimer.current) clearTimeout(dimTimer.current);
   }, []);
@@ -128,7 +137,11 @@ export function QuestionWindow({
     >
       <div
         className="page-pad measure pb-6"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 24px)" }}
+        style={{
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 24px)",
+          maxHeight: "86vh",
+          overflowY: "auto",
+        }}
       >
         <button
           type="button"
@@ -159,9 +172,9 @@ export function QuestionWindow({
                   setMessage("Type your answer rather than pasting it.");
                 }
               }}
-              rows={5}
+              rows={3}
               spellCheck={false}
-              className="prose-body mt-4 w-full resize-none bg-transparent outline-none"
+              className="prose-body mt-4 w-full resize-none overflow-hidden bg-transparent outline-none"
               style={{ color: "var(--ink)" }}
               aria-label="Your answer"
             />

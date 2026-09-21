@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { canChangeTimezone, isValidTimeZone } from "@/lib/domain/day";
 import { currentUser } from "@/lib/server/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemo } from "@/lib/server/demo";
 
 export const runtime = "nodejs";
 
@@ -15,6 +16,7 @@ export async function POST(request: Request) {
   if (!timezone || !isValidTimeZone(timezone)) {
     return NextResponse.json({ ok: false, reason: "invalid" }, { status: 400 });
   }
+  if (isDemo()) return NextResponse.json({ ok: true, changed: false });
   if (timezone === user.homeTimezone) return NextResponse.json({ ok: true, changed: false });
 
   if (!canChangeTimezone(user.timezoneChangedAt, new Date())) {

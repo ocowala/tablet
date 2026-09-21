@@ -12,6 +12,7 @@ import { issueDateFor } from "@/lib/domain/day";
 import type { AnchorAnswer, PublicAttempt, QuestionRecord, TextRecord } from "@/lib/types";
 import type { CurrentUser } from "./auth";
 import { gradeAnswer } from "./grader";
+import { demoSubmit, isDemo } from "./demo";
 
 export type GradeFailure =
   | { ok: false; error: "intake"; message: string }
@@ -34,6 +35,8 @@ export async function submitAnswer(
   largestInsertChars = 0,
   now = new Date(),
 ): Promise<GradeOutcome> {
+  if (isDemo()) return demoSubmit(questionId, body, largestInsertChars) as GradeOutcome;
+
   const admin = createAdminClient();
 
   const { data: question } = await admin

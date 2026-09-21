@@ -3,6 +3,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isValidTimeZone } from "@/lib/domain/day";
+import { DEMO_USER, isDemo } from "./demo";
 
 export type CurrentUser = {
   id: string;
@@ -17,6 +18,8 @@ export type CurrentUser = {
  * one is derived and can be changed later.
  */
 export async function currentUser(): Promise<CurrentUser | null> {
+  if (isDemo()) return DEMO_USER;
+
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return null;

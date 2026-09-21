@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   title: "Tablet",
   description: "One text a day, read slowly.",
   manifest: "/manifest.webmanifest",
+  icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }] },
   appleWebApp: { capable: true, title: "Tablet", statusBarStyle: "default" },
 };
 

@@ -8,8 +8,25 @@ Every reader gets the same text.
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in Supabase and Anthropic keys
 npm run dev
+```
+
+With no Supabase URL set, the app starts in **demo mode**: the whole reading
+flow runs from the first sample issue, in memory, with no database and no
+Anthropic key. Use it to look at the reading screen.
+
+It is a mockup, not a shortcut. The pipeline order, the hidden thresholds and
+the public shapes are the real ones; only the store and the grader are stand
+ins, and both live in `src/lib/server/demo.ts` so they are easy to delete.
+`min_seconds` is shortened to 4 so the question surfacing can actually be
+seen, and `POST /api/demo/reset` clears the store between runs.
+
+`TABLET_DEMO=1` forces demo mode on, `TABLET_DEMO=0` forces it off.
+
+For the real thing:
+
+```bash
+cp .env.example .env.local   # fill in Supabase and Anthropic keys
 ```
 
 Apply the schema to a Supabase project in order:

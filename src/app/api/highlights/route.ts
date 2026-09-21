@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { currentUser } from "@/lib/server/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { demoAddHighlight, demoRemoveHighlight, isDemo } from "@/lib/server/demo";
 
 export const runtime = "nodejs";
 
@@ -19,6 +20,16 @@ export async function POST(request: Request) {
 
   if (!textId || typeof paragraph !== "number" || typeof start !== "number" || typeof end !== "number") {
     return NextResponse.json({ ok: false }, { status: 400 });
+  }
+
+  if (isDemo()) {
+    const saved = demoAddHighlight({
+      paragraph,
+      start,
+      end,
+      color: color === "blue" ? "blue" : "yellow",
+    });
+    return NextResponse.json({ ok: true, id: saved.id });
   }
 
   const admin = createAdminClient();
@@ -45,6 +56,11 @@ export async function DELETE(request: Request) {
 
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return NextResponse.json({ ok: false }, { status: 400 });
+
+  if (isDemo()) {
+    demoRemoveHighlight(id);
+    return NextResponse.json({ ok: true });
+  }
 
   const admin = createAdminClient();
   await admin.from("highlights").delete().eq("id", id).eq("user_id", user.id);

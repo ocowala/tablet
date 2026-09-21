@@ -55,7 +55,7 @@ export function AaPopover({ open, onClose, onColorChange }: Props) {
   return (
     <div className="fixed inset-0 z-40" onClick={onClose}>
       <div
-        className="surface animate-fade-in absolute right-4 rounded-2xl p-4"
+        className="surface animate-fade-quick absolute right-4 rounded-2xl p-4"
         style={{ top: "calc(env(safe-area-inset-top) + 52px)", minWidth: "17rem" }}
         onClick={(event) => event.stopPropagation()}
         role="dialog"

@@ -31,7 +31,7 @@ export function Reader(props: Props) {
   const [highlights, setHighlights] = useState<HighlightRecord[]>(props.highlights);
   const [color, setColor] = useState<HighlightColor>("yellow");
   const [appearanceOpen, setAppearanceOpen] = useState(false);
-  const [surfaced, setSurfaced] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [revealOpen, setRevealOpen] = useState(false);
   const [lastParagraph, setLastParagraph] = useState(props.lastParagraph);
 
@@ -39,7 +39,7 @@ export function Reader(props: Props) {
   const paragraphRefs = useRef<(HTMLParagraphElement | null)[]>([]);
   const startedAt = useRef(Date.now());
   const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [paused, setPaused] = useState(false);
+  const paused = useRef(false);
 
   useEffect(() => setColor(getHighlightColor()), []);
 
@@ -48,15 +48,25 @@ export function Reader(props: Props) {
     [attempts],
   );
 
-  /** The first question the reader has not finished with. */
-  const current = useMemo(() => {
+  /** The next question the reader has not finished with. */
+  const pending = useMemo(() => {
     for (const question of props.questions) {
-      const mine = attemptsFor(question.id);
-      const latest = mine.at(-1);
+      const latest = attemptsFor(question.id).at(-1);
       if (!latest || !latest.settled) return question;
     }
     return null;
   }, [props.questions, attemptsFor]);
+
+  /**
+   * The question on screen. It is held open after a submit so the reader sees
+   * their percentile, and only released when they choose to move on. Letting
+   * it follow `pending` would swap the window out the instant an answer
+   * settled, which is exactly when the reader has something to read.
+   */
+  const current = useMemo(
+    () => props.questions.find((question) => question.id === activeId) ?? null,
+    [props.questions, activeId],
+  );
 
   const whyToday = props.questions.find((question) => question.kind === "why_today");
   const whyTodayDone = whyToday
@@ -74,9 +84,11 @@ export function Reader(props: Props) {
   // Track position, and notice when scrolling stops.
   useEffect(() => {
     const onScroll = () => {
-      setPaused(false);
+      paused.current = false;
       if (pauseTimer.current) clearTimeout(pauseTimer.current);
-      pauseTimer.current = setTimeout(() => setPaused(true), SCROLL_PAUSE_MS);
+      pauseTimer.current = setTimeout(() => {
+        paused.current = true;
+      }, SCROLL_PAUSE_MS);
 
       let top = 0;
       paragraphRefs.current.forEach((node, index) => {
@@ -86,7 +98,9 @@ export function Reader(props: Props) {
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
-    pauseTimer.current = setTimeout(() => setPaused(true), SCROLL_PAUSE_MS);
+    pauseTimer.current = setTimeout(() => {
+      paused.current = true;
+    }, SCROLL_PAUSE_MS);
     return () => {
       window.removeEventListener("scroll", onScroll);
       if (pauseTimer.current) clearTimeout(pauseTimer.current);
@@ -117,25 +131,37 @@ export function Reader(props: Props) {
    * from ever rising mid sentence.
    */
   useEffect(() => {
-    if (!current || surfaced || revealOpen) return;
-    if (!paused) return;
-    if ((Date.now() - startedAt.current) / 1000 < current.min_seconds) return;
+    if (activeId || revealOpen || !pending) return;
 
-    const trigger = paragraphRefs.current[current.trigger_paragraph];
-    if (trigger && trigger.getBoundingClientRect().bottom > window.innerHeight * 0.9) return;
+    // Polled rather than driven by state, because the last of the three
+    // conditions to come true is usually the clock, and a reader who has
+    // stopped scrolling to think produces no events at all.
+    const check = () => {
+      if (!paused.current) return;
+      if ((Date.now() - startedAt.current) / 1000 < pending.min_seconds) return;
 
-    setSurfaced(true);
-  }, [paused, current, surfaced, revealOpen, lastParagraph]);
+      const trigger = paragraphRefs.current[pending.trigger_paragraph];
+      if (trigger && trigger.getBoundingClientRect().bottom > window.innerHeight * 0.9) return;
 
-  // Reset the timer for the next question once one is answered.
-  useEffect(() => {
+      setActiveId(pending.id);
+    };
+
+    const timer = setInterval(check, 400);
+    check();
+    return () => clearInterval(timer);
+  }, [pending, activeId, revealOpen]);
+
+  /** Moving on closes the window and restarts the clock for the next one. */
+  const advance = useCallback(() => {
     startedAt.current = Date.now();
-    setSurfaced(false);
-  }, [current?.id]);
+    setActiveId(null);
+  }, []);
 
+  // The reveal waits for the reader to leave the why today window, so the
+  // percentile on their last answer is not cut off by it.
   useEffect(() => {
-    if (whyTodayDone) setRevealOpen(true);
-  }, [whyTodayDone]);
+    if (whyTodayDone && !activeId) setRevealOpen(true);
+  }, [whyTodayDone, activeId]);
 
   const addHighlight = useCallback(async () => {
     const root = container.current;
@@ -262,14 +288,14 @@ export function Reader(props: Props) {
           }
           questionId={whyToday?.id ?? null}
         />
-      ) : current && surfaced ? (
+      ) : current ? (
         <QuestionWindow
           key={current.id}
           question={current}
           attempts={attemptsFor(current.id)}
           signedIn={props.signedIn}
           onSubmit={submit}
-          onAdvance={() => setSurfaced(false)}
+          onAdvance={advance}
           onSignIn={signIn}
         />
       ) : null}
