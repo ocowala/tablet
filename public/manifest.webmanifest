@@ -1,0 +1,14 @@
+{
+  "name": "Tablet",
+  "short_name": "Tablet",
+  "description": "One text a day, read slowly.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8F7F6",
+  "theme_color": "#F8F7F6",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
